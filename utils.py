@@ -8,6 +8,32 @@ from sklearn.metrics import f1_score
 # Set a random seed for reproducibility
 np.random.seed(42)
 
+def f1_score(y_true, y_pred):
+    """
+    Compute the F1 score for unbalanced binary data using NumPy.
+
+    Parameters:
+    - y_true: NumPy array of true binary labels (0 or 1).
+    - y_pred: NumPy array of predicted binary labels (0 or 1).
+
+    Returns:
+    - F1 score, a float between 0 and 1.
+    """
+    # Calculate the number of true positives, false positives, and false negatives.
+    true_positives = np.sum((y_true == 1) & (y_pred == 1))
+    false_positives = np.sum((y_true == 0) & (y_pred == 1))
+    false_negatives = np.sum((y_true == 1) & (y_pred == 0))
+
+    # Calculate precision and recall, avoiding division by zero.
+    precision = true_positives / (true_positives + false_positives) if true_positives + false_positives > 0 else 0
+    recall = true_positives / (true_positives + false_negatives) if true_positives + false_negatives > 0 else 0
+
+    # Calculate the F1 score, avoiding division by zero.
+    f1 = 2 * (precision * recall) / (precision + recall) if precision + recall > 0 else 0
+
+    return f1
+
+
 def compute_mse(y, tx, w):
     """compute the loss by mse
     Args:
@@ -36,6 +62,7 @@ def compute_gradient_mse(y, tx, w):
     e = y - np.matmul(tx, w)
     grad = (-1/y.shape[0])*np.matmul(np.transpose(tx), e)
     return grad
+
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     """
@@ -79,17 +106,17 @@ def compute_logistic_loss(y, tx, w):
     """compute the cost by negative log likelihood.
 
     Args:
-        y:  shape=(N, 1)
+        y:  shape=(N, )
         tx: shape=(N, D)
-        w:  shape=(D, 1)
+        w:  shape=(D, )
 
     Returns:
         a non-negative loss
     """
     y = y.reshape(-1,1)
     N = y.shape[0]
-
-    return -np.mean(y*np.log(sigmoid(tx@w))+(np.ones((N,1))-y)*np.log(np.ones((N,1))-sigmoid(tx@w)))
+    loss = -np.mean(y*np.log(sigmoid(tx@w))+(np.ones((N,1))-y)*np.log(np.ones((N,1))-sigmoid(tx@w)))
+    return loss
 
 
 
@@ -107,7 +134,6 @@ def compute_gradient_logistic_loss(y, tx, w):
 
     N = len(y)
     y = y.reshape(-1,1)
-    # ***************************************************
     return (1/N)*(tx.T)@((sigmoid(tx@w))-(y))
 
 
@@ -128,6 +154,7 @@ def gradient_descent_for_logistic_regression(y, tx, w, gamma):
     gradient = compute_gradient_logistic_loss(y, tx, w)
     loss = compute_logistic_loss(y, tx, w)
     w_next = w - gamma * gradient
+
     return loss, w_next
 
 
@@ -135,22 +162,25 @@ def compute_loss_and_gradient_penalized_logistic_regression(y, tx, w, lambda_):
     """return the loss and gradient.
 
     Args:
-        y:  shape=(N, 1)
+        y:  shape=(N,)
         tx: shape=(N, D)
-        w:  shape=(D, 1)
+        w:  shape=(D,)
         lambda_: scalar
 
     Returns:
         loss: scalar number
         gradient: shape=(D, 1)
     """
+    
     loss_logistic = compute_logistic_loss(y, tx, w)
     loss_regularization = 0.5 * lambda_ * np.sum(w**2)
     loss = loss_logistic + 2 * loss_regularization
-    
+
     gradient_logistic = compute_gradient_logistic_loss(y, tx, w)
     gradient_regularization = lambda_ * w
-    gradient = gradient_logistic + 2 * gradient_regularization
+    gradient_regularization = gradient_regularization.reshape(-1, 1)
+
+    gradient = gradient_logistic + len(y) * gradient_regularization
     
     return loss, gradient
 
@@ -216,7 +246,6 @@ def stochastic_gradient_descent_for_mse(y, tx, initial_w, batch_size, max_iters,
     w = initial_w
 
     for n_iter in range(max_iters):
-        # ***************************************************
         stoch_gradient = [0,0]
         stoch_loss = 0
         for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
@@ -226,15 +255,14 @@ def stochastic_gradient_descent_for_mse(y, tx, initial_w, batch_size, max_iters,
             # loss = compute_loss(minibatch_y, minibatch_tx, w)
             stoch_gradient += grad
             stoch_loss += loss
-        # ***************************************************
         w = w - gamma*stoch_gradient
 
         ws.append(w)
         losses.append(stoch_loss)
 
         print(
-            "SGD iter. {bi}/{ti}: loss={l}, w0={w0}, w1={w1}".format(
-                bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]
+            "SGD iter. {bi}/{ti}: loss={l}".format(
+                bi=n_iter, ti=max_iters - 1, l=loss
             )
         )
     return losses, ws
@@ -242,6 +270,56 @@ def stochastic_gradient_descent_for_mse(y, tx, initial_w, batch_size, max_iters,
 
 
 ## GENERAL UTILS FOR DATA WRANGLING
+
+def predict(x, w, regression_type="mse"):
+    """
+    Make predictions using a linear model with the given weights.
+
+    Parameters:
+    x (array-like): Feature data for prediction.
+    w (array-like): Weight parameters for the linear model.
+    regression_type (str, optional): Type of regression ('mse' for mean squared error, 'lr' for logistic regression). Default is 'mse'.
+
+    Returns:
+    array-like: Predicted labels based on the input data and regression type.
+
+    This function takes feature data and a set of weight parameters for a linear model and
+    produces predictions based on the specified regression type. For mean squared error loss ('mse'),
+    the prediction is 1 if the output is greater than 0, otherwise -1. For logistic regression ('lr'),
+    the prediction is 1 if the output is greater than 0.5, otherwise -1.
+    """
+    tx_te = np.c_[np.ones((x.shape[0], 1)), x]
+    y_pred = tx_te @ w
+    if regression_type=="mse":
+        y_pred = [1 if y > 0 else -1 for y in y_pred]
+    elif regression_type=="lr":
+        y_pred = [1 if y > 0.5 else -1 for y in y_pred]
+    return y_pred
+
+
+def predict_and_evaluate(x, w, y, regression_type="mse", verbose=1):
+    """
+    Make predictions and evaluate the model's performance.
+
+    Parameters:
+    x (array-like): Feature data for prediction.
+    w (array-like): Weight parameters for the linear model.
+    y (array-like): Ground truth labels for evaluation.
+    regression_type (str, optional): Type of regression ('mse' for mean squared error, 'lr' for logistic regression). Default is 'mse'.
+    verbose (int, optional): Verbosity level for evaluation. Default is 1.
+
+    Returns:
+    f1: F1-score
+    """
+    tx_te = np.c_[np.ones((x.shape[0], 1)), x]
+    y_pred = tx_te @ w
+    if regression_type=="mse":
+        y_pred = [1 if y > 0 else -1 for y in y_pred]
+    elif regression_type=="lr":
+        y_pred = [1 if y > 0.5 else -1 for y in y_pred]
+    f1 = evaluate(y_pred, y, verbose)
+    return f1
+
 
 def standardize(x_train, x_test):
     """
@@ -377,56 +455,6 @@ def evaluate(y_pred, y_gt, verbose=1):
     if verbose == 1:
         print(f'Accuracy: {list(result).count(True) / len(result)}')
         print(f'F1-score: {f1_score(y_gt, y_pred)}')
-    return f1
-
-
-def predict(x, w, regression_type="mse"):
-    """
-    Make predictions using a linear model with the given weights.
-
-    Parameters:
-    x (array-like): Feature data for prediction.
-    w (array-like): Weight parameters for the linear model.
-    regression_type (str, optional): Type of regression ('mse' for mean squared error, 'lr' for logistic regression). Default is 'mse'.
-
-    Returns:
-    array-like: Predicted labels based on the input data and regression type.
-
-    This function takes feature data and a set of weight parameters for a linear model and
-    produces predictions based on the specified regression type. For mean squared error loss ('mse'),
-    the prediction is 1 if the output is greater than 0, otherwise -1. For logistic regression ('lr'),
-    the prediction is 1 if the output is greater than 0.5, otherwise -1.
-    """
-    tx_te = np.c_[np.ones((x.shape[0], 1)), x]
-    y_pred = tx_te @ w
-    if regression_type=="mse":
-        y_pred = [1 if y > 0 else -1 for y in y_pred]
-    elif regression_type=="lr":
-        y_pred = [1 if y > 0.5 else -1 for y in y_pred]
-    return y_pred
-
-
-def predict_and_evaluate(x, w, y, regression_type="mse", verbose=1):
-    """
-    Make predictions and evaluate the model's performance.
-
-    Parameters:
-    x (array-like): Feature data for prediction.
-    w (array-like): Weight parameters for the linear model.
-    y (array-like): Ground truth labels for evaluation.
-    regression_type (str, optional): Type of regression ('mse' for mean squared error, 'lr' for logistic regression). Default is 'mse'.
-    verbose (int, optional): Verbosity level for evaluation. Default is 1.
-
-    Returns:
-    f1: F1-score
-    """
-    tx_te = np.c_[np.ones((x.shape[0], 1)), x]
-    y_pred = tx_te @ w
-    if regression_type=="mse":
-        y_pred = [1 if y > 0 else -1 for y in y_pred]
-    elif regression_type=="lr":
-        y_pred = [1 if y > 0.5 else -1 for y in y_pred]
-    f1 = evaluate(y_pred, y, verbose)
     return f1
 
 

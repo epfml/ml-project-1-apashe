@@ -26,6 +26,7 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     loss = 0
     w = initial_w
     for n_iter in range(max_iters):
+        loss_prev = loss
         loss = compute_mse(y, tx, w)
         gradient = compute_gradient_mse(y, tx, w)
         w = w - gamma*gradient
@@ -33,11 +34,14 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         # store w and loss
         ws.append(w)
         losses.append(loss)
+
         print(
-            "GD iter. {bi}/{ti}: loss={l}, w0={w0}, w1={w1}".format(
-                bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]
+            "GD iter. {bi}/{ti}: loss={l}".format(
+                bi=n_iter, ti=max_iters - 1, l=loss
             )
         )
+        if np.abs(loss - loss_prev) < 1e-08:
+            break 
     return w, loss
 
 
@@ -78,8 +82,8 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
         losses.append(stoch_loss)
 
         print(
-            "SGD iter. {bi}/{ti}: loss={l}, w0={w0}, w1={w1}".format(
-                bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]
+            "SGD iter. {bi}/{ti}: loss={l}".format(
+                bi=n_iter, ti=max_iters - 1, l=loss
             )
         )
     return w, stoch_loss
@@ -123,15 +127,8 @@ def ridge_regression(y, tx, lambda_):
 
     lambdaI = 2 * N * lambda_ * np.identity(tx.shape[1])
     XTX_reg = XTX + lambdaI
-    
-    # Check if the determinant is close to zero
-    det_XTX_reg = np.linalg.det(XTX_reg)
-    if det_XTX_reg < 1e-10:
-        # Add a small value to the diagonal to make it non-singular
-        XTX_reg += np.identity(tx.shape[1]) * 1e-6
-    
-    w = np.linalg.solve(XTX_reg, XTY)
 
+    w = np.linalg.solve(XTX_reg, XTY)
     mse = compute_mse(y, tx, w)
 
     return w, mse
@@ -142,9 +139,9 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """return the loss and gradient.
 
     Args:
-        y:  shape=(N, 1)
+        y:  shape=(N, )
         tx: shape=(N, D)
-        initial_w: numpy array of shape=(2, ). The initial guess (or the initialization) for the model parameters
+        initial_w: numpy array of shape=(D, ). The initial guess (or the initialization) for the model parameters
         max_iters: a scalar denoting the total number of iterations of SGD
         gamma: a scalar denoting the stepsize
 
@@ -157,9 +154,10 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     # start the logistic regression
     for iter in range(max_iters):
         # get loss and update w.
+        w = w.reshape(-1, 1)
         loss, w = gradient_descent_for_logistic_regression(y, tx, w, gamma)
+        w = w.reshape(-1)
         print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
-    print("loss={l}".format(l=loss))
 
     return w, loss
 
@@ -169,10 +167,10 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """return the loss and gradient.
 
     Args:
-        y:  shape=(N, 1)
+        y:  shape=(N, )
         tx: shape=(N, D)
         lambda_: scalar.
-        initial_w: numpy array of shape=(2, ). The initial guess (or the initialization) for the model parameters
+        initial_w: numpy array of shape=(D, ). The initial guess (or the initialization) for the model parameters
         max_iters: a scalar denoting the total number of iterations of SGD
         gamma: a scalar denoting the stepsize
 
@@ -180,13 +178,14 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         loss: scalar number
         gradient: shape=(D, 1)
     """
-    w = initial_w    
+    w = initial_w
     # start the logistic regression
     for iter in range(max_iters):
         # get penalized loss and update w.
+        w = w.reshape(-1, 1)
         loss_pen, w = gradient_descent_for_penalized_logistic_regression(y, tx, w, gamma, lambda_)
+        w = w.reshape(-1)
         print("Current iteration={i}, loss={l}".format(i=iter, l=loss_pen))
     loss = compute_logistic_loss(y, tx, w)
-    print("Final loss={l}".format(l=loss))
 
     return w, loss
