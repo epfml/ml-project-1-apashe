@@ -1,8 +1,6 @@
 """The 6 ML methods implemented in the labs"""
 import numpy as np
-from ml_methods_utils import *
-from sklearn.metrics import f1_score
-from utils import evaluate1
+from utils import *
 
 # Set a random seed for reproducibility
 np.random.seed(42)
@@ -22,14 +20,14 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         ws: a list of length max_iters containing the model parameters as numpy arrays of shape (2, ), for each iteration of GD
         losses: a list of length max_iters containing the loss value (scalar) for each iteration of GD
     """
-# Define parameters to store w and loss
+    # Define parameters to store w and loss
     ws = [initial_w]
     losses = []
     loss = 0
     w = initial_w
     for n_iter in range(max_iters):
-        loss = compute_mse_linear_regression(y, tx, w)
-        gradient = compute_gradient_linear_regression(y, tx, w)
+        loss = compute_mse(y, tx, w)
+        gradient = compute_gradient_mse(y, tx, w)
         w = w - gamma*gradient
 
         # store w and loss
@@ -68,8 +66,8 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
         stoch_gradient = np.zeros(tx.shape[1])
         stoch_loss = 0
         for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size=1):
-            grad = compute_gradient_linear_regression(minibatch_y,minibatch_tx,w)
-            loss = compute_mse_linear_regression(minibatch_y, minibatch_tx, w)
+            grad = compute_gradient_mse(minibatch_y,minibatch_tx,w)
+            loss = compute_mse(minibatch_y, minibatch_tx, w)
             stoch_gradient += grad
             stoch_loss += loss
         
@@ -103,7 +101,7 @@ def least_squares(y, tx):
     XTX = tx.T @ tx
     XTY = tx.T @ y
     w = np.linalg.solve(XTX, XTY)
-    mse = compute_mse_linear_regression(y, tx, w)
+    mse = compute_mse(y, tx, w)
     return w, mse
 
 
@@ -134,7 +132,7 @@ def ridge_regression(y, tx, lambda_):
     
     w = np.linalg.solve(XTX_reg, XTY)
 
-    mse = compute_mse_linear_regression(y, tx, w)
+    mse = compute_mse(y, tx, w)
 
     return w, mse
 
@@ -159,7 +157,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     # start the logistic regression
     for iter in range(max_iters):
         # get loss and update w.
-        loss, w = learning_by_gradient_descent_logistic(y, tx, w, gamma)
+        loss, w = gradient_descent_for_logistic_regression(y, tx, w, gamma)
         print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
     print("loss={l}".format(l=loss))
 
@@ -186,9 +184,9 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     # start the logistic regression
     for iter in range(max_iters):
         # get penalized loss and update w.
-        loss_pen, w = learning_by_penalized_gradient(y, tx, w, gamma, lambda_)
+        loss_pen, w = gradient_descent_for_penalized_logistic_regression(y, tx, w, gamma, lambda_)
         print("Current iteration={i}, loss={l}".format(i=iter, l=loss_pen))
-    loss = calculate_loss_logistic_regression(y, tx, w)
+    loss = compute_logistic_loss(y, tx, w)
     print("Final loss={l}".format(l=loss))
 
     return w, loss
