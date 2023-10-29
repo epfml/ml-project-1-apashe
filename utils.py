@@ -133,11 +133,15 @@ def replace_dk_values_with_nan(x_train):
             x_train[(x_train[:, i] == 77) | (x_train[:, i] == 99), i] = np.nan
         elif max_value[i] == 999:
             x_train[(x_train[:, i] == 777) | (x_train[:, i] == 999), i] = np.nan
-        elif max_value[i] == 9999:
-            x_train[(x_train[:, i] == 9999), i] = np.nan
+        elif max_value[i] == 9999: 
+            x_train[(x_train[:, i] == 7777) | (x_train[:, i] == 9999), i] = np.nan    # ADDED 7777
         elif max_value[i] == 99900:
             x_train[(x_train[:, i] == 99900 ), i] = np.nan
-
+        # following is new
+        elif max_value[i] == 99999:
+            x_train[(x_train[:, i] == 99999), i] = np.nan
+        elif max_value[i] == 999999:
+            x_train[(x_train[:, i] == 777777) | (x_train[:, i] == 999999), i] = np.nan
     return x_train
 
 
