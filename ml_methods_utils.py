@@ -1,6 +1,8 @@
 """Functions used in the ML methods"""
 import numpy as np
 
+# Set a random seed for reproducibility
+np.random.seed(42)
 
 def compute_mse_linear_regression(y, tx, w):
     """compute the loss by mse for linear regression
