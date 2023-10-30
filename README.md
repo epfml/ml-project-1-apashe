@@ -44,7 +44,7 @@ To run the code in this project, follow these steps:
 ```bash
 conda create --name ml-project python=3.8
 conda activate ml-project
-conda install numpy matplotlib
+conda install numpy matplotlib ipykernel
 ```
 
 2. If you only want to test our model. We have already generated a ready to use `w.txt` file that contains our pretrained model obtained from ridge regression. You can obtain the csv file by running the file `run.ipynb`, you then have to submit this file on aicrowd to get the f1-score and accuracy on the testing set. Make sure to run all the blocks in order.
