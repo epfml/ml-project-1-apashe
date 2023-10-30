@@ -1,38 +1,10 @@
 """Useful functions"""
 import numpy as np
-# Just to test
-from sklearn.metrics import f1_score
 
 ## UTILS USED IN THE 6 ML METHOD
 
 # Set a random seed for reproducibility
 np.random.seed(1)
-
-def f1_score(y_true, y_pred):
-    """
-    Compute the F1 score for unbalanced binary data using NumPy.
-
-    Parameters:
-    - y_true: NumPy array of true binary labels (0 or 1).
-    - y_pred: NumPy array of predicted binary labels (0 or 1).
-
-    Returns:
-    - F1 score, a float between 0 and 1.
-    """
-    # Calculate the number of true positives, false positives, and false negatives.
-    true_positives = np.sum((y_true == 1) & (y_pred == 1))
-    false_positives = np.sum((y_true == 0) & (y_pred == 1))
-    false_negatives = np.sum((y_true == 1) & (y_pred == 0))
-
-    # Calculate precision and recall, avoiding division by zero.
-    precision = true_positives / (true_positives + false_positives) if true_positives + false_positives > 0 else 0
-    recall = true_positives / (true_positives + false_negatives) if true_positives + false_negatives > 0 else 0
-
-    # Calculate the F1 score, avoiding division by zero.
-    f1 = 2 * (precision * recall) / (precision + recall) if precision + recall > 0 else 0
-
-    return f1
-
 
 def compute_mse(y, tx, w):
     """compute the loss by mse
@@ -255,6 +227,35 @@ def stochastic_gradient_descent_for_mse(y, tx, initial_w, batch_size, max_iters,
 
 ## GENERAL UTILS FOR DATA WRANGLING
 
+def compute_f1(y_true, y_pred):
+    """
+    Calculate the F1 score using NumPy.
+
+    Parameters:
+    - y_true: NumPy array or list, true labels
+    - y_pred: NumPy array or list, predicted labels
+
+    Returns:
+    - F1 score
+    """
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+
+    # Calculate true positives, false positives, and false negatives
+    true_positives = np.sum((y_true == 1) & (y_pred == 1))
+    false_positives = np.sum((y_true == -1) & (y_pred == 1))
+    false_negatives = np.sum((y_true == 1) & (y_pred == -1))
+
+    # Calculate precision and recall
+    precision = true_positives / (true_positives + false_positives)
+    recall = true_positives / (true_positives + false_negatives)
+
+    # Calculate the F1 score
+    f1_score = 2 * (precision * recall) / (precision + recall)
+
+    return f1_score
+
+
 def predict(x, w, regression_type="mse"):
     """
     Make predictions using a linear model with the given weights.
@@ -437,10 +438,10 @@ def evaluate(y_pred, y_gt, verbose=1):
     metric for the model's overall performance.
     """
     result = y_pred == y_gt
-    f1 = f1_score(y_gt, y_pred)
+    f1 = compute_f1(y_gt, y_pred)
     if verbose == 1:
         print(f'Accuracy: {list(result).count(True) / len(result)}')
-        print(f'F1-score: {f1_score(y_gt, y_pred)}')
+        print(f'F1-score: {compute_f1(y_gt, y_pred)}')
     return f1
 
 
