@@ -18,7 +18,7 @@ Group Name: APASHE
 
 The project includes the following files:
 
-1. `run.ipynb`: This Jupyter Notebook imports a pretrained model, applies it to the dataset, and creates a CSV file suitable for submission on AI Crowd
+1. `run.ipynb`: This Jupyter Notebook imports a pretrained model obtained from ridge regression, applies it to the dataset, and creates a CSV file suitable for submission on AI Crowd
 
 2. `train.ipynb`: This Jupyter Notebook is dedicated to training our best working model using ridge regression. It creates a txt file that can then be imported in run.ipynb.
 
@@ -47,7 +47,7 @@ conda activate ml-project
 conda install numpy matplotlib
 ```
 
-2. If you only want to test our model. We have already generated a ready to use `w.txt` file that contains our pretrained model. You can obtain the csv file by running the file `run.ipynb`, you then have to submit this file on aicrowd to get the f1-score and accuracy on the testing set. Make sure to run all the blocks in order.
+2. If you only want to test our model. We have already generated a ready to use `w.txt` file that contains our pretrained model obtained from ridge regression. You can obtain the csv file by running the file `run.ipynb`, you then have to submit this file on aicrowd to get the f1-score and accuracy on the testing set. Make sure to run all the blocks in order.
 
 2. If you want to train the model yourself, open and run the `train.ipynb` notebook. Make sure to run all the blocks in order. After training, you can use the pretrained model by opening and running the `run.ipynb` notebook to create a submission file for AI Crowd.
 
