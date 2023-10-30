@@ -32,7 +32,7 @@ The project includes the following files:
 
 ## Data
 
-The project data can be found in a separate file called `dataset`. You can download the dataset from the following URL: [ML_course repository on GitHub](https://github.com/epfml/ML_course).
+The project data should be put in the folder called `dataset`. You can download the dataset from the following URL: [ML_course repository on GitHub](https://github.com/epfml/ML_course).
 
 
 ## Running the Code
