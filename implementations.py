@@ -189,3 +189,25 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     loss = compute_logistic_loss(y, tx, w)
 
     return w, loss
+
+
+def reg_logistic_regression_sgd(y, tx, lambda_, initial_w, max_iters, gamma, batch_size):
+    w = initial_w
+    w_best = w
+    loss_best = 10**20
+    # start the logistic regression
+    for iter in range(max_iters):
+        stoch_gradient = np.zeros((tx.shape[1],1))
+        stoch_loss = 0
+        previous_loss = stoch_loss
+        for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
+            # get loss and update w.    
+            loss, gradient = compute_loss_and_gradient_penalized_logistic_regression(minibatch_y, minibatch_tx, w, lambda_)
+            stoch_gradient += gradient
+            stoch_loss += loss
+        w = w - gamma*stoch_gradient
+
+        print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
+    print("loss_best={l}".format(l=loss_best))
+
+    return w, stoch_loss
