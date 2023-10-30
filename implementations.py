@@ -22,7 +22,6 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     """
     # Define parameters to store w and loss
     w = initial_w
-    losses = []
     loss = compute_mse(y, tx, w)
     for n_iter in range(max_iters):
         gradient = compute_gradient_mse(y, tx, w)
@@ -54,8 +53,6 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
         ws: a list of length max_iters containing the model parameters as numpy arrays of shape (2, ), for each iteration of SGD
     """
     # Define parameters to store w and loss
-    ws = [initial_w]
-    losses = []
     w = initial_w
 
 
@@ -73,8 +70,6 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
             loss = compute_mse(minibatch_y, minibatch_tx, w)
             stoch_loss += loss
     
-        ws.append(w)
-        losses.append(stoch_loss)
 
         print(
             "SGD iter. {bi}/{ti}: loss={l}".format(
@@ -180,32 +175,3 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     loss = compute_logistic_loss(y, tx, w)
 
     return w, loss
-
-
-def reg_logistic_regression_sgd(y, tx, lambda_, initial_w, max_iters, gamma, batch_size):
-    w = initial_w
-    w_best = w
-    loss_best = 10**20
-    # start the logistic regression
-    for iter in range(max_iters):
-        stoch_gradient = np.zeros((tx.shape[1],1))
-        stoch_loss = 0
-        previous_loss = stoch_loss
-        for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
-            # get loss and update w.  
-            gradient_logistic = compute_gradient_logistic_loss(minibatch_y, minibatch_tx, w)
-            gradient_regularization = lambda_ * w
-            gradient = gradient_logistic + 2 * gradient_regularization
-
-            stoch_gradient += gradient
-        w = w - gamma*stoch_gradient
-
-        for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
-            loss_logistic = compute_logistic_loss(minibatch_y, minibatch_tx, w)
-            loss_regularization = 0.5 * lambda_ * np.sum(w**2)
-            loss = loss_logistic + 2 * loss_regularization  
-            stoch_loss += loss
-        print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
-    print("loss_best={l}".format(l=loss_best))
-
-    return w, stoch_loss
