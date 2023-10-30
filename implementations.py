@@ -3,7 +3,7 @@ import numpy as np
 from utils import *
 
 # Set a random seed for reproducibility
-np.random.seed(42)
+np.random.seed(1)
 
 # Method 1: Linear regression using gradient descent
 def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
@@ -21,27 +21,20 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         losses: a list of length max_iters containing the loss value (scalar) for each iteration of GD
     """
     # Define parameters to store w and loss
-    ws = [initial_w]
-    losses = []
-    loss = 0
     w = initial_w
+    losses = []
+    loss = compute_mse(y, tx, w)
     for n_iter in range(max_iters):
-        loss_prev = loss
-        loss = compute_mse(y, tx, w)
         gradient = compute_gradient_mse(y, tx, w)
         w = w - gamma*gradient
+        loss = compute_mse(y, tx, w)
 
-        # store w and loss
-        ws.append(w)
-        losses.append(loss)
 
         print(
             "GD iter. {bi}/{ti}: loss={l}".format(
                 bi=n_iter, ti=max_iters - 1, l=loss
             )
         )
-        if np.abs(loss - loss_prev) < 1e-08:
-            break 
     return w, loss
 
 
@@ -71,19 +64,21 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
         stoch_loss = 0
         for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size=1):
             grad = compute_gradient_mse(minibatch_y,minibatch_tx,w)
-            loss = compute_mse(minibatch_y, minibatch_tx, w)
             stoch_gradient += grad
-            stoch_loss += loss
         
         # Update w by gradient
         w = w - gamma*stoch_gradient
 
+        for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size=1):
+            loss = compute_mse(minibatch_y, minibatch_tx, w)
+            stoch_loss += loss
+    
         ws.append(w)
         losses.append(stoch_loss)
 
         print(
             "SGD iter. {bi}/{ti}: loss={l}".format(
-                bi=n_iter, ti=max_iters - 1, l=loss
+                bi=n_iter, ti=max_iters - 1, l=stoch_loss
             )
         )
     return w, stoch_loss
@@ -150,13 +145,11 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         gradient: shape=(D, 1)
     """
     w = initial_w
-    loss = 0
+    loss = compute_logistic_loss(y, tx, w)
     # start the logistic regression
     for iter in range(max_iters):
         # get loss and update w.
-        w = w.reshape(-1, 1)
         loss, w = gradient_descent_for_logistic_regression(y, tx, w, gamma)
-        w = w.reshape(-1)
         print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
 
     return w, loss
@@ -182,9 +175,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     # start the logistic regression
     for iter in range(max_iters):
         # get penalized loss and update w.
-        w = w.reshape(-1, 1)
         loss_pen, w = gradient_descent_for_penalized_logistic_regression(y, tx, w, gamma, lambda_)
-        w = w.reshape(-1)
         print("Current iteration={i}, loss={l}".format(i=iter, l=loss_pen))
     loss = compute_logistic_loss(y, tx, w)
 

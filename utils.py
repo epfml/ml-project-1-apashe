@@ -6,7 +6,7 @@ from sklearn.metrics import f1_score
 ## UTILS USED IN THE 6 ML METHOD
 
 # Set a random seed for reproducibility
-np.random.seed(42)
+np.random.seed(1)
 
 def f1_score(y_true, y_pred):
     """
@@ -103,7 +103,7 @@ def sigmoid(t):
 
 
 def compute_logistic_loss(y, tx, w):
-    """compute the cost by negative log likelihood.
+    """compute the logistic loss.
 
     Args:
         y:  shape=(N, )
@@ -113,10 +113,8 @@ def compute_logistic_loss(y, tx, w):
     Returns:
         a non-negative loss
     """
-    y = y.reshape(-1,1)
-    N = y.shape[0]
-    loss = -np.mean(y*np.log(sigmoid(tx@w))+(np.ones((N,1))-y)*np.log(np.ones((N,1))-sigmoid(tx@w)))
-    return loss
+
+    return -np.mean(y*np.log(sigmoid(tx@w))+(1-y)*np.log(1-sigmoid(tx@w)))
 
 
 
@@ -133,7 +131,6 @@ def compute_gradient_logistic_loss(y, tx, w):
     """
 
     N = len(y)
-    y = y.reshape(-1,1)
     return (1/N)*(tx.T)@((sigmoid(tx@w))-(y))
 
 
@@ -152,37 +149,12 @@ def gradient_descent_for_logistic_regression(y, tx, w, gamma):
         w: shape=(D, 1)
     """
     gradient = compute_gradient_logistic_loss(y, tx, w)
-    loss = compute_logistic_loss(y, tx, w)
     w_next = w - gamma * gradient
+    
+    loss = compute_logistic_loss(y, tx, w_next)
 
     return loss, w_next
 
-
-def compute_loss_and_gradient_penalized_logistic_regression(y, tx, w, lambda_):
-    """return the loss and gradient.
-
-    Args:
-        y:  shape=(N,)
-        tx: shape=(N, D)
-        w:  shape=(D,)
-        lambda_: scalar
-
-    Returns:
-        loss: scalar number
-        gradient: shape=(D, 1)
-    """
-    
-    loss_logistic = compute_logistic_loss(y, tx, w)
-    loss_regularization = 0.5 * lambda_ * np.sum(w**2)
-    loss = loss_logistic + 2 * loss_regularization
-
-    gradient_logistic = compute_gradient_logistic_loss(y, tx, w)
-    gradient_regularization = lambda_ * w
-    gradient_regularization = gradient_regularization.reshape(-1, 1)
-
-    gradient = gradient_logistic + len(y) * gradient_regularization
-    
-    return loss, gradient
 
 
 def gradient_descent_for_penalized_logistic_regression(y, tx, w, gamma, lambda_):
@@ -201,8 +173,20 @@ def gradient_descent_for_penalized_logistic_regression(y, tx, w, gamma, lambda_)
         loss: scalar number
         w: shape=(D, 1)
     """
-    loss, gradient = compute_loss_and_gradient_penalized_logistic_regression(y, tx, w, lambda_)
+
+    gradient_logistic = compute_gradient_logistic_loss(y, tx, w)
+    gradient_regularization = lambda_ * w
+
+    gradient = gradient_logistic + 2 * gradient_regularization
+
     w = w - gamma * gradient
+    
+
+
+    loss_logistic = compute_logistic_loss(y, tx, w)
+    loss_regularization = 0.5 * lambda_ * np.sum(w**2)
+    loss = loss_logistic + 2 * loss_regularization
+
     return loss, w
 
 
@@ -484,7 +468,7 @@ def build_poly(x, degree):
     return poly
 
 
-def split_data(x, y, ratio, seed=42):
+def split_data(x, y, ratio, seed=1):
     """
     split the dataset based on the split ratio. If ratio is 0.8
     you will have 80% of your data set dedicated to training
