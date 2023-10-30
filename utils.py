@@ -321,6 +321,11 @@ def predict_and_evaluate(x, w, y, regression_type="mse", verbose=1):
     return f1
 
 
+def remove_uniquevalue_cols(x_train,x_test):
+    std_train = np.nanstd(x_train, axis=0)
+    non_zero_std_columns = np.where(std_train != 0)[0]
+    return x_train[:, non_zero_std_columns], x_test[:, non_zero_std_columns]
+
 def standardize(x_train, x_test):
     """
     Standardize the feature data for training and testing sets.
@@ -333,14 +338,11 @@ def standardize(x_train, x_test):
     tuple: A tuple containing the standardized training and testing sets.
 
     This function standardizes the feature data to have zero mean and unit variance
-    for columns with non-zero standard deviation. Standardization is a common preprocessing
-    step in machine learning to ensure that features are on a similar scale.
+    for columns with non-zero standard deviation.
     """
-    std_train = np.nanstd(x_train, axis=0)
-    non_zero_std_columns = np.where(std_train != 0)[0]
 
-    x_train_st = (x_train[:, non_zero_std_columns] - np.nanmean(x_train[:, non_zero_std_columns], axis=0)) / std_train[non_zero_std_columns]
-    x_test_st = (x_test[:, non_zero_std_columns] - np.nanmean(x_test[:, non_zero_std_columns], axis=0)) / std_train[non_zero_std_columns]
+    x_train_st = (x_train - np.nanmean(x_train, axis=0)) / np.nanstd(x_train, axis=0)
+    x_test_st = (x_test - np.nanmean(x_train, axis=0)) / np.nanstd(x_train, axis=0)
 
     return x_train_st, x_test_st
 
